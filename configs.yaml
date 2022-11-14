@@ -1,24 +1,25 @@
 # 系统配置
+# 注意为属性名:属性内容 格式
 db_config:
-  db_host = 'localhost'
-  db_port = 3306
-  db_user = 'root'
-  db_password = 'lu020427'
-  db_name = 'embybot'
+  db_host : 'localhost'
+  db_port : 3306
+  db_user : 'root'
+  db_password : 'lu020427'
+  db_name : 'embybot'
 
 bot_config:
-  bot_token = 'xxx'
-  bot_name = '@xxx'
-  api_id = 99999999
-  api_hash = "xxx"
+  bot_token : '5645065115:AAFYK-uaclJIgEpklDjXC5gca24UJvQUkUk'
+  bot_name : '@coinsinic_emby_bot'
+  api_id : 1517395
+  api_hash : "2deb65a3c5b6f45db1014f60884fb657"
 
 emby_config:
-  embyurl = 'xxx'
-  embyapi = 'xxx'
-  line = 'xxx'
+  embyurl : 'http://69.197.140.26:8096'
+  embyapi : '3b4051b0baa3456ca3bf3fad9579724f'
+  line : '测试'
 
 tg_config:
-  groupid = -100
-  channelid = -100
-  admin_list = []
-  ban_channel_id = -100
+  groupid : -100
+  channelid : -100
+  admin_list : []
+  ban_channel_id : -100
