@@ -502,112 +502,6 @@ async def my_handler(client, message):
         await message.reply(
             '请选择你需要的操作', reply_markup=markup)
 
-    elif str(text).find('用户删除') != -1:
-        await message.reply("请输入需要删除的emby用户名")
-        chat_step[tgid] = '/delete'
-
-    elif str(text).find('/delete') != -1:
-        r = await delete(tgid,str(message.text))
-        if r == 'B':
-            content = "未输入用户名，请重新输入"
-        elif r == 'A':
-            content = "该用户名未与你的telegram账号绑定，请确认后重新输入"
-        else:
-            content = '用户' + r + '已被删除'
-            chat_step[tgid] = ''
-        await message.reply(content)
-
-    # 管理员操作
-    elif str(text).find("用户设置") != -1:
-        if sqlworker.check_admin(tgid=tgid):
-            markup = InlineKeyboardMarkup(buttons.admin_user_setting_buttons)
-            await message.reply('请选择你需要的操作', reply_markup=markup)
-        else:
-            await message.reply('不是管理员请勿使用管理员命令')
-
-    elif str(text).find("/setadmin") != -1:
-        usr_tgid = text.split(" ")[1]
-        if not sqlworker.check_admin(usr_tgid):
-            await set_admin(usr_tgid)
-            if sqlworker.check_admin(usr_tgid):
-                content = "管理员已设置完毕"
-                chat_step[tgid] = ''
-            else:
-                content = "管理员设置失败，请重新输入管理员ID"
-        else:
-            content = "该用户已经是管理员，无需设置"
-            chat_step[tgid] = ''
-        await message.reply(content)
-
-    elif str(text).find("创建邀请码") != -1:
-        if sqlworker.check_admin(tgid=tgid):
-            re = await CreateCode(tgid=tgid)
-            if not IsReply(message=message):
-                await message.reply(f'生成成功，邀请码<code>{re}</code>')
-        else:
-            await message.reply('不是管理员请勿使用管理员命令')
-
-
-    elif str(text).find('/ban_emby') != -1:
-        if IsReply(message=message):
-            replyid = IsReply(message=message)
-        else:
-            replyid = message.text.split(' ')[-1]
-
-        re = await BanEmby(tgid=tgid, message=message, replyid=replyid)
-        if re[0] == 'A':
-            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>的Emby账号{re[1]}已被封禁')
-            await app.send_message(chat_id=ban_channel_id,
-                                   text=f'#Ban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：{re[1]}\n原因：管理员封禁')
-        elif re[0] == 'B':
-            await message.reply('请勿随意使用管理员命令')
-        elif re[0] == 'C':
-            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>没有Emby账号，但是已经取消了他的注册资格')
-        elif re[0] == 'D':
-            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>没有Emby账号，也没有注册资格')
-
-    elif str(text).find('/unban_emby') != -1:
-        if IsReply(message=message):
-            replyid = IsReply(message=message)
-        else:
-            replyid = message.text.split(' ')[-1]
-
-        re = await UnbanEmby(tgid=tgid, message=message, replyid=replyid)
-        if re[0] == 'A':
-            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>的Emby账号{re[1]}已解除封禁')
-            await app.send_message(chat_id=ban_channel_id,
-                                   text=f'#Unban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：{re[1]}\n原因：管理员解封')
-        elif re[0] == 'B':
-            await message.reply('请勿随意使用管理员命令')
-        elif re[0] == 'C':
-            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>没有Emby账号，也没有注册资格')
-
-    # 开放注册
-    elif str(text).find("注册设置") != -1:
-        if sqlworker.check_admin(tgid=tgid):
-            markup = InlineKeyboardMarkup(buttons.admin_register_buttons)
-            await message.reply('请选择你需要的操作', reply_markup=markup)
-        else:
-            await message.reply('不是管理员请勿使用管理员命令')
-
-    elif str(text).find('/register_all_time') != -1:
-        re = await register_all_time(tgid=tgid, message=text)
-        if re == 'A':
-            await message.reply('您不是管理员，请勿随意使用管理命令')
-        else:
-            expired = time.localtime(re)
-            expired = time.strftime("%Y/%m/%d %H:%M:%S", expired)
-            chat_step[tgid] = ''
-            await message.reply(f"注册已开放，将在{expired}关闭注册")
-
-    elif str(text).find('/register_all_user') != -1:
-        re = await register_all_user(tgid=tgid, message=text)
-        if re == 'A':
-            await message.reply('您不是管理员，请勿随意使用管理命令')
-        else:
-            chat_step[tgid] = ''
-            await message.reply(f"注册已开放，本次共有{re}个名额")
-
     elif str(text).find('用户注册') != -1:
         if prichat(message=message):
             register_public = sqlworker.select('config', 'register_public', {"id": 1})[0][0]
@@ -654,54 +548,6 @@ async def my_handler(client, message):
         else:
             await message.reply('请勿在群组使用该命令')
 
-    elif str(text).find('兑换') != -1:
-        if prichat(message=message):
-            await message.reply('请输入兑换码')
-            chat_step[tgid] = '/input_code'
-        else:
-            await message.reply('请勿在群组使用该命令')
-
-    elif str(text).find('/input_code') != -1:
-        if prichat(message=message):
-            re = await invite(tgid=tgid, message=str(message.text))
-            if re == 'A':
-                await message.reply('没有找到这个邀请码')
-            if re == 'B':
-                await message.reply('邀请码已被使用')
-            if re == 'C':
-                await message.reply('恭喜您获得了注册资格，邀请码已失效,请输入用户名')
-                chat_step[tgid] = '/create'
-            if re == 'D':
-                await message.reply('您已有账号或已经获得注册资格，请不要重复使用邀请码')
-                chat_step[tgid] = ''
-        else:
-            await message.reply('请勿在群组使用该命令')
-
-
-    elif str(text).find('/create') != -1:
-        if prichat(message=message):
-            register_method = sqlworker.select('config', 'register_method', {"id": 1})[0][0]
-            if register_method == 'None':
-                re = await create(tgid=tgid, message=str(message.text))
-            elif register_method == 'User':
-                re = await create_user(tgid=tgid, message=text)
-            elif register_method == 'Time':
-                re = await create_time(tgid=tgid, message=text)
-            if re == 'A':
-                await message.reply('您已经注册过emby账号，请勿重复注册')
-            elif re == 'C':
-                await message.reply('您还未获得注册资格，请输入邀请码')
-                chat_step[tgid] = '/input_code'
-            elif re == 'B':
-                await message.reply('请再次输入用户名，用户名不要包含空格')
-            elif re == 'D':
-                await message.reply('该用户名已被使用')
-            else:
-                await message.reply(f'创建成功，账号<code>{re[0]}</code>，初始密码为<code>{re[1]}</code>，密码不进行保存，请尽快登陆修改密码')
-                chat_step[tgid] = ''
-        else:
-            await message.reply('请勿在群组使用该命令')
-
     elif str(text).find("用户升级") != -1:
         await message.reply("升级功能尚未开放")
 
@@ -745,5 +591,158 @@ async def my_handler(client, message):
         else:
             await message.reply('请勿在群组中使用此命令')
 
+    elif str(text).find('兑换') != -1:
+        if prichat(message=message):
+            await message.reply('请输入兑换码')
+            chat_step[tgid] = '/input_code'
+        else:
+            await message.reply('请勿在群组使用该命令')
+
+    elif str(text).find('用户删除') != -1:
+        await message.reply("请输入需要删除的emby用户名")
+        chat_step[tgid] = '/delete'
+
+    # 管理员操作
+    elif str(text).find("用户设置") != -1:
+        if sqlworker.check_admin(tgid=tgid):
+            markup = InlineKeyboardMarkup(buttons.admin_user_setting_buttons)
+            await message.reply('请选择你需要的操作', reply_markup=markup)
+        else:
+            await message.reply('不是管理员请勿使用管理员命令')
+
+    elif str(text).find("创建邀请码") != -1:
+        if sqlworker.check_admin(tgid=tgid):
+            re = await CreateCode(tgid=tgid)
+            if not IsReply(message=message):
+                await message.reply(f'生成成功，邀请码<code>{re}</code>')
+        else:
+            await message.reply('不是管理员请勿使用管理员命令')
+
+    elif str(text).find("注册设置") != -1:
+        if sqlworker.check_admin(tgid=tgid):
+            markup = InlineKeyboardMarkup(buttons.admin_register_buttons)
+            await message.reply('请选择你需要的操作', reply_markup=markup)
+        else:
+            await message.reply('不是管理员请勿使用管理员命令')
+
+    elif str(text).find('/delete') != -1:
+        r = await delete(tgid,str(message.text))
+        if r == 'B':
+            content = "未输入用户名，请重新输入"
+        elif r == 'A':
+            content = "该用户名未与你的telegram账号绑定，请确认后重新输入"
+        else:
+            content = '用户' + r + '已被删除'
+            chat_step[tgid] = ''
+        await message.reply(content)
+
+    elif str(text).find("/setadmin") != -1:
+        usr_tgid = text.split(" ")[1]
+        if not sqlworker.check_admin(usr_tgid):
+            await set_admin(usr_tgid)
+            if sqlworker.check_admin(usr_tgid):
+                content = "管理员已设置完毕"
+                chat_step[tgid] = ''
+            else:
+                content = "管理员设置失败，请重新输入管理员ID"
+        else:
+            content = "该用户已经是管理员，无需设置"
+            chat_step[tgid] = ''
+        await message.reply(content)
+
+    elif str(text).find('/ban_emby') != -1:
+        if IsReply(message=message):
+            replyid = IsReply(message=message)
+        else:
+            replyid = message.text.split(' ')[-1]
+
+        re = await BanEmby(tgid=tgid, message=message, replyid=replyid)
+        if re[0] == 'A':
+            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>的Emby账号{re[1]}已被封禁')
+            await app.send_message(chat_id=ban_channel_id,
+                                   text=f'#Ban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：{re[1]}\n原因：管理员封禁')
+        elif re[0] == 'B':
+            await message.reply('请勿随意使用管理员命令')
+        elif re[0] == 'C':
+            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>没有Emby账号，但是已经取消了他的注册资格')
+        elif re[0] == 'D':
+            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>没有Emby账号，也没有注册资格')
+
+    elif str(text).find('/unban_emby') != -1:
+        if IsReply(message=message):
+            replyid = IsReply(message=message)
+        else:
+            replyid = message.text.split(' ')[-1]
+
+        re = await UnbanEmby(tgid=tgid, message=message, replyid=replyid)
+        if re[0] == 'A':
+            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>的Emby账号{re[1]}已解除封禁')
+            await app.send_message(chat_id=ban_channel_id,
+                                   text=f'#Unban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：{re[1]}\n原因：管理员解封')
+        elif re[0] == 'B':
+            await message.reply('请勿随意使用管理员命令')
+        elif re[0] == 'C':
+            await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>没有Emby账号，也没有注册资格')
+
+    # 开放注册
+
+    elif str(text).find('/register_all_time') != -1:
+        re = await register_all_time(tgid=tgid, message=text)
+        if re == 'A':
+            await message.reply('您不是管理员，请勿随意使用管理命令')
+        else:
+            expired = time.localtime(re)
+            expired = time.strftime("%Y/%m/%d %H:%M:%S", expired)
+            chat_step[tgid] = ''
+            await message.reply(f"注册已开放，将在{expired}关闭注册")
+
+    elif str(text).find('/register_all_user') != -1:
+        re = await register_all_user(tgid=tgid, message=text)
+        if re == 'A':
+            await message.reply('您不是管理员，请勿随意使用管理命令')
+        else:
+            chat_step[tgid] = ''
+            await message.reply(f"注册已开放，本次共有{re}个名额")
+
+    elif str(text).find('/input_code') != -1:
+        if prichat(message=message):
+            re = await invite(tgid=tgid, message=str(message.text))
+            if re == 'A':
+                await message.reply('没有找到这个邀请码')
+            if re == 'B':
+                await message.reply('邀请码已被使用')
+            if re == 'C':
+                await message.reply('恭喜您获得了注册资格，邀请码已失效,请输入用户名')
+                chat_step[tgid] = '/create'
+            if re == 'D':
+                await message.reply('您已有账号或已经获得注册资格，请不要重复使用邀请码')
+                chat_step[tgid] = ''
+        else:
+            await message.reply('请勿在群组使用该命令')
+
+
+    elif str(text).find('/create') != -1:
+        if prichat(message=message):
+            register_method = sqlworker.select('config', 'register_method', {"id": 1})[0][0]
+            if register_method == 'None':
+                re = await create(tgid=tgid, message=str(message.text))
+            elif register_method == 'User':
+                re = await create_user(tgid=tgid, message=text)
+            elif register_method == 'Time':
+                re = await create_time(tgid=tgid, message=text)
+            if re == 'A':
+                await message.reply('您已经注册过emby账号，请勿重复注册')
+            elif re == 'C':
+                await message.reply('您还未获得注册资格，请输入邀请码')
+                chat_step[tgid] = '/input_code'
+            elif re == 'B':
+                await message.reply('请再次输入用户名，用户名不要包含空格')
+            elif re == 'D':
+                await message.reply('该用户名已被使用')
+            else:
+                await message.reply(f'创建成功，账号<code>{re[0]}</code>，初始密码为<code>{re[1]}</code>，密码不进行保存，请尽快登陆修改密码')
+                chat_step[tgid] = ''
+        else:
+            await message.reply('请勿在群组使用该命令')
 
 app.run()
