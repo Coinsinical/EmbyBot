@@ -33,7 +33,7 @@ class HandleSql:
         self.engine = create_engine(f'mysql+pymysql://%s:%s@%s:%s/%s' % (user, pwd, host, port, database))
         self.conn = pymysql.connect(host=host, user=user, password=pwd, database=database, port=port)
         self.cursor = self.conn.cursor()  # create database connect
-        print('数据库已连接')
+        print('数据库已连接,程序成功启动')
 
     def __del__(self):
         self.cursor.close()
@@ -41,11 +41,13 @@ class HandleSql:
         print("数据库连接已断开")
 
     def query(self, sql):
+        print(sql)
         self.cursor.execute(sql)
         return self.cursor.fetchall()
 
     def exec(self, sql):
         try:
+            print(sql)
             self.cursor.execute(sql)
             self.conn.commit()
         except Exception as e:

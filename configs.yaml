@@ -1,25 +1,32 @@
 # 系统配置
 # 注意为属性名:属性内容 格式
 db_config:
-  db_host : 'localhost'
+  db_host : '107.150.58.242'
   db_port : 3306
-  db_user : 'root'
-  db_password : 'lu020427'
+  db_user : 'bot_db'
+  db_password : '56fKJTdJWZeAnJxN'
   db_name : 'embybot'
 
 bot_config:
-  bot_token : '5645065115:AAFYK-uaclJIgEpklDjXC5gca24UJvQUkUk'
-  bot_name : '@coinsinic_emby_bot'
-  api_id : 1517395
-  api_hash : "2deb65a3c5b6f45db1014f60884fb657"
+  bot_token : '5773840462:AAG6dtlRdGY633ZOAfMxt9bo32qoIcl_VhE'
+  bot_name : '@gfwEmby_bot'
+  api_id : 17601473
+  api_hash : "3d0afda852ace0a6b03e73908abfc849"
 
 emby_config:
-  embyurl : 'http://69.197.140.26:8096'
-  embyapi : '3b4051b0baa3456ca3bf3fad9579724f'
-  line : '测试'
+  embyurl : 'http://us-s1.gfwemby.org'
+  embyapi : 'c580d8a451404776bc2d421334028887'
+  line : '''美国Kirino:http://us-s2.gfwemby.org
+美国(原服务器):http://us-s1.gfwemby.org
+美国AWS:http://aws-us.gfwemby.org
+日本AWS:http://aws-jp.gfwemby.org
+PORT ARE 80 OR 443
+==============================
+要想查看更多信息，请访问我们的wiki'''
 
 tg_config:
-  groupid : -100
-  channelid : -100
-  admin_list : []
+  groupid : -1001887919023
+  channelid : -1001741416803
+  admin_list : [1659943903]
   ban_channel_id : -100
+
