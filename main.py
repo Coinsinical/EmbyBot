@@ -418,6 +418,7 @@ async def create_user(tgid=0, message=''):
         try:
             r = json.loads(r)  # create a new user
         except json.decoder.JSONDecodeError:
+            print(r)
             if r.find('already exists.'):
                 return 'D'  # already exists
         data1 = '{"IsAdministrator":false,"IsHidden":true,"IsHiddenRemotely":true,"IsDisabled":false,"EnableRemoteControlOfOtherUsers":false,"EnableSharedDeviceControl":false,"EnableRemoteAccess":true,"EnableLiveTvManagement":false,"EnableLiveTvAccess":true,"EnableMediaPlayback":true,"EnableAudioPlaybackTranscoding":false,"EnableVideoPlaybackTranscoding":false,"EnablePlaybackRemuxing":false,"EnableContentDeletion":false,"EnableContentDownloading":false,"EnableSubtitleDownloading":false,"EnableSubtitleManagement":false,"EnableSyncTranscoding":false,"EnableMediaConversion":false,"EnableAllDevices":true,"SimultaneousStreamLimit":3}'
@@ -429,8 +430,8 @@ async def create_user(tgid=0, message=''):
         requests.post(f"{embyurl}/emby/users/{r['Id']}/Password?api_key={embyapi}",
                       headers=headers, data=data)
         if not sqlworker.query("SELECT * FROM user WHERE tgid = '{}' and grade = 0".format(tgid)):
-            data_dict = {'tgid': tgid, 'admin': 'F', 'emby_name': str(r['Name']), 'emby_id': str(r['Id']),
-                         'canrig': 'F'}
+            data_dict = {'tgid': tgid, 'admin': '0', 'emby_name': str(r['Name']), 'emby_id': str(r['Id']),
+                         'canrig': 'False'}
             sqlworker.insert(data_dict, 'user')  # add the user info
             write_conofig(config='register_public_user', parms=register_public_user - 1)
             return r['Name'], NewPw
@@ -559,7 +560,7 @@ async def my_handler(client, message):
                 if re == 'NotInTheDatabase':
                     await message.reply('用户未入库，无信息')
                 elif re[0][0] == 'HaveAnEmby':
-                    await message.reply('用户信息已私发，请查看')
+                    await message.reply('用户信息已PM')
                     await app.send_message(chat_id=tgid,
                                            text=f'用户<a href="tg://user?id={replyid}">{replyid}</a>的信息\nEmby Name: {re[1]}\n Emby ID: {re[2]}\n上次活动时间{re[3]}\n账号创建时间{re[4]}\n被ban时间{re[5]}')
                 elif re[0][0] == 'NotHaveAnEmby':
