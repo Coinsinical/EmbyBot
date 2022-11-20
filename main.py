@@ -544,6 +544,7 @@ async def answer(client, callback_query):
 
     if callback_query.data == '/input_upgrade_code':
         content = '请输入升级码'
+
     if callback_query.data == '/input_invite_code':
         content = '请输入邀请码'
 
