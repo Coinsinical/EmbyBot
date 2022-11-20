@@ -5,15 +5,11 @@ import time
 import uuid
 from datetime import datetime, timedelta
 
-import pandas as pd
-import pymysql
 import requests
-import yaml
-from pyrogram.types import (ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton)
+from pyrogram.types import (ReplyKeyboardMarkup, InlineKeyboardMarkup)
 
 import tools
 import pyrogram  # 与telegram进行通信所使用的工具包
-from sqlalchemy import create_engine
 
 chat_step = {}
 # 读取配置文件
@@ -38,7 +34,7 @@ def LocalTime(time=''):
     return localtime_LastLogin  # change emby time to Asia/Shanghai time
 
 
-def IsReply(message=''):
+def IsReply(message):
     try:
         tgid = message.reply_to_message.from_user.id
     except AttributeError:
@@ -195,6 +191,7 @@ def userinfo(tgid='0'):
         emby_id = user_info[4]
         canrig = user_info[5]
         grade = user_info[7]
+        print('^^^'+emby_id+'^^^')
         if grade == 0:
             grade = "普通用户"
         else:
@@ -500,6 +497,7 @@ async def answer(client, callback_query):
     tgid = callback_query.from_user.id
     chat_step[tgid] = callback_query.data
     message = callback_query.message
+    content = ''
     if callback_query.data == '/admin_settings':
         await app.edit_inline_reply_markup(callback_query.inline_message_id,
                                            InlineKeyboardMarkup(tools.Buttons.admin_admin_setting_buttons))
@@ -646,7 +644,7 @@ async def my_handler(client, message):
 
     elif str(text).find("个人信息") != -1 or text == f'/info{bot_name}':
         replyid = IsReply(message=message)
-        if replyid != False:
+        if replyid:
             re = userinfo(tgid=replyid)
             if sqlworker.check_admin(tgid=tgid):
                 if re == 'NotInTheDatabase':
@@ -656,7 +654,9 @@ async def my_handler(client, message):
                 elif re[0][0] == 'HaveAnEmby':
                     await message.reply('用户信息已PM')
                     await app.send_message(chat_id=tgid,
-                                           text=f'用户<a href="tg://user?id={replyid}">{replyid}</a>的信息\nEmby Name: {re[1]}\n Emby ID: {re[2]}\n上次活动时间{re[3]}\n账号创建时间{re[4]}\n被ban时间{re[5]}')
+                                           text=f'用户<a href="tg://user?id={replyid}">{replyid}</a>的信息\n'
+                                                f'Emby Name: {re[1]}\n Emby ID: {re[2]}\n上次活动时间{re[3]}\n'
+                                                f'账号创建时间{re[4]}\n被ban时间{re[5]}')
                 elif re[0][0] == 'NotHaveAnEmby':
                     await message.reply(f'此用户没有emby账号，可注册：{re[1]}')
             else:
@@ -671,13 +671,13 @@ async def my_handler(client, message):
                 text = []
                 for reply in re:
                     text.append(f'用户<a href="tg://user?id={tgid}">{tgid}</a>的信息\nEmby等级：{reply[6]}\n'
-                                f'Emby Name: {reply[1]}\n Emby ID: {reply[2]}\n上次活动时间：{reply[3]}\n账号创建时间：{reply[4]}\n被ban时间：{reply[5]}')
+                                f'Emby Name: {reply[1]}\n Emby ID: {reply[2]}\n上次活动时间：'
+                                f'{reply[3]}\n账号创建时间：{reply[4]}\n被ban时间：{reply[5]}')
                 text = '\n\n'.join(text)
                 await message.reply('用户信息已私发，请查看')
                 await app.send_message(chat_id=tgid, text=text)
             elif re[0][0] == 'NotHaveAnEmby':
                 await message.reply(f'此用户没有emby账号，可注册：{re[0][1]}')
-
 
     elif text.find('线路查看') != -1:
         if prichat(message=message):
@@ -726,7 +726,7 @@ async def my_handler(client, message):
 
     elif str(text).find("升级用户") != -1:
         await message.reply("请输入需要升级的用户telegram ID")
-        chat_step[tgid]= '/upgrade'
+        chat_step[tgid] = '/upgrade'
 
     elif str(text).find('/delete') != -1:
         r = await delete(tgid, str(message.text))
@@ -777,7 +777,8 @@ async def my_handler(client, message):
         if re[0] == 'A':
             await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>的Emby账号{re[1]}已被封禁')
             await app.send_message(chat_id=ban_channel_id,
-                                   text=f'#Ban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：{re[1]}\n原因：管理员封禁')
+                                   text=f'#Ban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：'
+                                        f'{re[1]}\n原因：管理员封禁')
         elif re[0] == 'B':
             await message.reply('请勿随意使用管理员命令')
         elif re[0] == 'C':
@@ -795,7 +796,8 @@ async def my_handler(client, message):
         if re[0] == 'A':
             await message.reply(f'用户<a href="tg://user?id={replyid}">{replyid}</a>的Emby账号{re[1]}已解除封禁')
             await app.send_message(chat_id=ban_channel_id,
-                                   text=f'#Unban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：{re[1]}\n原因：管理员解封')
+                                   text=f'#Unban\n用户：<a href="tg://user?id={replyid}">{replyid}</a>\nEmby账号：'
+                                        f'{re[1]}\n原因：管理员解封')
         elif re[0] == 'B':
             await message.reply('请勿随意使用管理员命令')
         elif re[0] == 'C':
@@ -839,7 +841,7 @@ async def my_handler(client, message):
 
     elif str(text).find('/input_upgrade_code') != -1:
         if prichat(message=message):
-            check_upgrade_code(tgid, message)
+            await check_upgrade_code(tgid, message)
         else:
             await message.reply('请勿在群组使用该命令')
 
