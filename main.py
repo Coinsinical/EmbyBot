@@ -683,10 +683,15 @@ async def my_handler(client, message):
 
     elif text.find('线路查看') != -1:
         if prichat(message=message):
-            if hadname(tgid=tgid) == 'B':
-                await message.reply(line)
-            else:
+            flag = 0
+            usr_info = sqlworker.query("SELECT * FROM user WHERE tgid = '{}'".format(tgid))
+            for info in usr_info:
+                if info[3] != 'None':
+                    flag = 1
+            if flag == 0:
                 await message.reply('无Emby账号无法查看线路')
+            else:
+                await message.reply(line)
         else:
             await message.reply('请勿在群组中使用此命令')
 
