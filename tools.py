@@ -106,7 +106,7 @@ class Buttons(object):
         [KeyboardButton("用户注册"), KeyboardButton("用户删除"), KeyboardButton("用户升级"), KeyboardButton("兑换")],
         [KeyboardButton("线路查看"), KeyboardButton("个人信息")]]
 
-    user_code_buttons = [[InlineKeyboardButton("兑换邀请码", callback_data="/inpute_register_code")],
+    user_code_buttons = [[InlineKeyboardButton("兑换邀请码", callback_data="/inpute_invite_code")],
                           [InlineKeyboardButton("兑换升级码", callback_data="/input_upgrade_code")]]
 
     # admin buttons

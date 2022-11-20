@@ -51,8 +51,10 @@ async def CreateCode(tgid=0, type='register'):
         sqlworker.insert(data_dict, "upgrade_code")
     return code
 
+
 async def delete_admin(tgid=0):
     sqlworker.exec("UPDATE user SET admin = 0 WHERE tgid = {}".format(tgid))
+
 
 async def set_admin(tgid=0):
     sqlworker.exec("UPDATE user SET admin = 1 WHERE tgid = {}".format(tgid))
@@ -191,7 +193,7 @@ def userinfo(tgid='0'):
         emby_id = user_info[4]
         canrig = user_info[5]
         grade = user_info[7]
-        print('^^^'+emby_id+'^^^')
+        print('^^^' + emby_id + '^^^')
         if grade == 0:
             grade = "普通用户"
         else:
@@ -641,7 +643,6 @@ async def my_handler(client, message):
                 await upgrade(embyname=emby_name)
                 await message.reply("恭喜您，您的emby账号{}已升级成功！".format(emby_name))
 
-
     elif str(text).find("个人信息") != -1 or text == f'/info{bot_name}':
         replyid = IsReply(message=message)
         if replyid:
@@ -889,5 +890,6 @@ async def my_handler(client, message):
             await upgrade(embyname=emby_name)
             await message.reply("emby账号{}已升级成功！".format(emby_name))
             chat_step[tgid] = ''
+
 
 app.run()
