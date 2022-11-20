@@ -8,14 +8,14 @@ db_config:
   db_name : 'embybot'
 
 bot_config:
-  bot_token : '5773840462:AAG6dtlRdGY633ZOAfMxt9bo32qoIcl_VhE'
+  bot_token : '5773840462:AAEo_DQXhbOailgHVq9jFCUoIMh1_ZFZRko'
   bot_name : '@gfwEmby_bot'
   api_id : 17601473
   api_hash : "3d0afda852ace0a6b03e73908abfc849"
 
 emby_config:
-  embyurl : 'http://us-s1.gfwemby.org'
-  embyapi : 'c580d8a451404776bc2d421334028887'
+  embyurl : 'http://127.0.0.1:8096'
+  embyapi : '2707f3ce2e41432cb6f54e64c5e0ae06'
   line : '''美国Kirino:http://us-s2.gfwemby.org
 美国(原服务器):http://us-s1.gfwemby.org
 美国AWS:http://aws-us.gfwemby.org
@@ -29,4 +29,3 @@ tg_config:
   channelid : -1001741416803
   admin_list : [1659943903]
   ban_channel_id : -100
-

@@ -46,15 +46,54 @@ def IsReply(message=''):
     return tgid
 
 
-async def CreateCode(tgid=0):
-    code = f'register-{str(uuid.uuid4())}'
+async def CreateCode(tgid=0, type='register'):
+    code = f'{type}-{str(uuid.uuid4())}'
     data_dict = {'code': code, 'tgid': tgid, 'time': int(time.time()), 'used': 'False'}
-    sqlworker.insert(data_dict, "invite_code")
+    if type == 'register':
+        sqlworker.insert(data_dict, "invite_code")
+    else:
+        sqlworker.insert(data_dict, "upgrade_code")
     return code
 
+async def delete_admin(tgid=0):
+    sqlworker.exec("UPDATE user SET admin = 0 WHERE tgid = {}".format(tgid))
 
 async def set_admin(tgid=0):
     sqlworker.exec("UPDATE user SET admin = 1 WHERE tgid = {}".format(tgid))
+
+
+async def check_upgrade_code(tgid, message):
+    message_txt = str(message.text).split(' ')
+    code = message_txt[-1]  # get the code
+    print("select * from upgrade_code where code ='{}'".format(code))
+    code_data = sqlworker.query("select * from upgrade_code where code ='{}'".format(code))
+    if not code_data:
+        await message.reply('没有找到这个升级码，请检查后重试')
+        return
+
+    if code_data[0][3] == 'True':
+        await message.reply('该升级码已被使用')
+        return
+
+    if canrig(tgid) == 'A':
+        await message.reply("您没有可以升级的账号，请先注册")
+        return
+    elif hadname(tgid) == 'C':
+        await message.reply("您尚未绑定Emby账号，请先注册绑定")
+        return
+    elif sqlworker.select('user', '*', {'tgid': tgid, 'grade': 1}):
+        await message.reply("您已拥有高级账户，无法升级")
+        return
+    else:
+        user_info = sqlworker.select('user', '*', {'tgid': tgid, 'grade': 0})
+        if user_info[0][8] == 'False':
+            sqlworker.update('user', {'canup': 'True'}, {'tgid': tgid})
+            code_used = "UPDATE upgrade_code SET used = 'True' WHERE code ='{}'".format(code)
+            sqlworker.exec(code_used)  # set the code has been used
+            await message.reply("恭喜您获得了升级资格，升级码已失效, 请点击下方用户升级按钮进行升级")
+        else:
+            await message.reply("您已拥有升级资格，无需使用升级码")
+            return
 
 
 async def invite(tgid=0, message=''):
@@ -170,12 +209,15 @@ def userinfo(tgid='0'):
         if emby_name != 'None':
             r = requests.get(
                 f"{config['emby_config']['embyurl']}/emby/users/{emby_id}?api_key={config['emby_config']['embyapi']}").text
-            r = json.loads(r)
             try:
+                r = json.loads(r)
                 lastacttime = r['LastActivityDate']
                 createdtime = r['DateCreated']
                 lastacttime = LocalTime(time=lastacttime)
                 createdtime = LocalTime(time=createdtime)
+            except json.decoder.JSONDecodeError:
+                print(r)
+                return 'F'
             except KeyError:
                 lastacttime = 'None'
                 createdtime = 'None'
@@ -305,7 +347,7 @@ async def delete(tgid, message):
     }
     emby_id = user_data[0][4]
     r = requests.post(url=embyurl + '/emby/Users/' + emby_id + '/Delete', headers=headers,
-                  params=params).text  # update policy
+                      params=params).text  # update policy
     sqlworker.del_user(name=name)
     return name
 
@@ -451,14 +493,21 @@ def write_conofig(config='', parms=''):
     return 'OK'
 
 
+# TODO: change it into switch case mode
 @app.on_callback_query()
 async def answer(client, callback_query):
     global chat_step
     tgid = callback_query.from_user.id
     chat_step[tgid] = callback_query.data
     message = callback_query.message
+    if callback_query.data == '/admin_settings':
+        await app.edit_inline_reply_markup(callback_query.inline_message_id,
+                                           InlineKeyboardMarkup(tools.Buttons.admin_admin_setting_buttons))
+        chat_step[tgid] = ''
     if callback_query.data == '/setadmin':
         content = "请输入需要设置的管理员telegram ID"
+    if callback_query.data == '/deleteadmin':
+        content = "请输入需要删除的管理员telegram ID"
     if callback_query.data == '/register_all_time':
         content = "请输入开放注册的时间（分）"
     if callback_query.data == '/register_all_user':
@@ -472,13 +521,42 @@ async def answer(client, callback_query):
         write_conofig("register_public", 'False')
         content = "注册已关闭"
         chat_step[tgid] = ''
+
+    if callback_query.data == '/create_register_code':
+        if sqlworker.check_admin(tgid=tgid):
+            if not IsReply(message=message):
+                re = await CreateCode(tgid=tgid)
+                chat_step[tgid] = ''
+                content = f'生成成功，邀请码<code>{re}</code>'
+        else:
+            content = '不是管理员请勿使用管理员命令'
+        chat_step[tgid] = ''
+
+    if callback_query.data == '/create_upgrade_code':
+        if sqlworker.check_admin(tgid=tgid):
+            if not IsReply(message=message):
+                re = await CreateCode(tgid=tgid, type='upgrade')
+                chat_step[tgid] = ''
+                content = f'生成成功，邀请码<code>{re}</code>'
+        else:
+            content = '不是管理员请勿使用管理员命令'
+        chat_step[tgid] = ''
+
+    if callback_query.data == '/input_upgrade_code':
+        content = '请输入升级码'
+    if callback_query.data == '/input_invite_code':
+        content = '请输入邀请码'
+
     if callback_query.data == '/ban_emby':
         content = '请输入需要禁用的用户telegram ID'
     if callback_query.data == '/unban_emby':
         content = '请输入需要禁用的用户telegram ID'
-    await message.reply(content)
+
+    if content != '':
+        await message.reply(content)
 
 
+# TODO: judge the identity when receive the message
 @app.on_message(pyrogram.filters.text)
 async def my_handler(client, message):
     global chat_step
@@ -494,7 +572,7 @@ async def my_handler(client, message):
         text = str(message.text)
 
     print(text)
-    if str(text) == '/start' or text == f'/start{bot_name}':
+    if str(text).find('/start') != -1 or text == f'/start{bot_name}':
         # one list represents one line,you can put serval button in one list and show them in one line
         if sqlworker.check_admin(tgid):
             markup = ReplyKeyboardMarkup(buttons.admin_start_buttons, resize_keyboard=True)
@@ -541,7 +619,7 @@ async def my_handler(client, message):
                     await  message.reply("请输入你的Emby用户名")
                     chat_step[tgid] = '/create'
                 elif re == 'C':
-                    await message.reply('您还未获得注册资格，请点击下方按钮进行兑换')
+                    await message.reply('您还未获得注册资格，请点击下方兑换按钮进行兑换邀请码后再试')
                 else:
                     await message.reply("注册已经结束，请期待下次注册")
             else:
@@ -550,7 +628,21 @@ async def my_handler(client, message):
             await message.reply('请勿在群组使用该命令')
 
     elif str(text).find("用户升级") != -1:
-        await message.reply("升级功能尚未开放")
+        if canrig(tgid) == 'A':
+            await message.reply("您没有可以升级的账号，请先注册")
+        elif hadname(tgid) == 'C':
+            await message.reply("您尚未绑定Emby账号，请先注册绑定")
+        elif sqlworker.select('user', '*', {'tgid': tgid, 'grade': 1}):
+            await message.reply("您已拥有高级账户，无法升级")
+        else:
+            user_info = sqlworker.select('user', '*', {'tgid': tgid, 'grade': 0})
+            if user_info[0][8] == 'False':
+                await message.reply("您的帐号暂时不可升级，请点击下方兑换按钮兑换升级码后再试")
+            else:
+                emby_name = user_info[0][3]
+                await upgrade(embyname=emby_name)
+                await message.reply("恭喜您，您的emby账号{}已升级成功！".format(emby_name))
+
 
     elif str(text).find("个人信息") != -1 or text == f'/info{bot_name}':
         replyid = IsReply(message=message)
@@ -559,6 +651,8 @@ async def my_handler(client, message):
             if sqlworker.check_admin(tgid=tgid):
                 if re == 'NotInTheDatabase':
                     await message.reply('用户未入库，无信息')
+                elif re == 'F':
+                    await message.reply('查询信息失败，请联系管理员查看日志')
                 elif re[0][0] == 'HaveAnEmby':
                     await message.reply('用户信息已PM')
                     await app.send_message(chat_id=tgid,
@@ -571,6 +665,8 @@ async def my_handler(client, message):
             re = userinfo(tgid=tgid)
             if re == 'NotInTheDatabase':
                 await message.reply('用户未入库，无信息')
+            elif re == 'F':
+                await message.reply('查询信息失败，请联系管理员查看日志')
             elif re[0][0] == 'HaveAnEmby':
                 text = []
                 for reply in re:
@@ -594,8 +690,8 @@ async def my_handler(client, message):
 
     elif str(text).find('兑换') != -1:
         if prichat(message=message):
-            await message.reply('请输入兑换码')
-            chat_step[tgid] = '/input_code'
+            markup = InlineKeyboardMarkup(buttons.user_code_buttons)
+            await message.reply('请选择你需要的操作', reply_markup=markup)
         else:
             await message.reply('请勿在群组使用该命令')
 
@@ -611,11 +707,13 @@ async def my_handler(client, message):
         else:
             await message.reply('不是管理员请勿使用管理员命令')
 
-    elif str(text).find("创建邀请码") != -1:
+    elif str(text).find("创建券码") != -1:
         if sqlworker.check_admin(tgid=tgid):
-            re = await CreateCode(tgid=tgid)
             if not IsReply(message=message):
-                await message.reply(f'生成成功，邀请码<code>{re}</code>')
+                markup = InlineKeyboardMarkup(buttons.admin_code_buttons)
+                await message.reply('请选择你需要的操作', reply_markup=markup)
+            else:
+                await message.reply("请在私聊中使用此命令")
         else:
             await message.reply('不是管理员请勿使用管理员命令')
 
@@ -626,8 +724,12 @@ async def my_handler(client, message):
         else:
             await message.reply('不是管理员请勿使用管理员命令')
 
+    elif str(text).find("升级用户") != -1:
+        await message.reply("请输入需要升级的用户telegram ID")
+        chat_step[tgid]= '/upgrade'
+
     elif str(text).find('/delete') != -1:
-        r = await delete(tgid,str(message.text))
+        r = await delete(tgid, str(message.text))
         if r == 'B':
             content = "未输入用户名，请重新输入"
         elif r == 'A':
@@ -648,6 +750,20 @@ async def my_handler(client, message):
                 content = "管理员设置失败，请重新输入管理员ID"
         else:
             content = "该用户已经是管理员，无需设置"
+            chat_step[tgid] = ''
+        await message.reply(content)
+
+    elif str(text).find("/deleteadmin") != -1:
+        usr_tgid = text.split(" ")[-1]
+        if sqlworker.check_admin(usr_tgid):
+            await delete_admin(usr_tgid)
+            if not sqlworker.check_admin(usr_tgid):
+                content = "管理员已删除完毕"
+                chat_step[tgid] = ''
+            else:
+                content = "管理员删除失败，请重新输入管理员ID"
+        else:
+            content = "该用户还不是管理员，无需删除"
             chat_step[tgid] = ''
         await message.reply(content)
 
@@ -705,7 +821,7 @@ async def my_handler(client, message):
             chat_step[tgid] = ''
             await message.reply(f"注册已开放，本次共有{re}个名额")
 
-    elif str(text).find('/input_code') != -1:
+    elif str(text).find('/input_invite_code') != -1:
         if prichat(message=message):
             re = await invite(tgid=tgid, message=str(message.text))
             if re == 'A':
@@ -721,6 +837,11 @@ async def my_handler(client, message):
         else:
             await message.reply('请勿在群组使用该命令')
 
+    elif str(text).find('/input_upgrade_code') != -1:
+        if prichat(message=message):
+            check_upgrade_code(tgid, message)
+        else:
+            await message.reply('请勿在群组使用该命令')
 
     elif str(text).find('/create') != -1:
         if prichat(message=message):
@@ -745,5 +866,26 @@ async def my_handler(client, message):
                 chat_step[tgid] = ''
         else:
             await message.reply('请勿在群组使用该命令')
+
+    elif str(text).find('/upgrade') != -1:
+        up_tgid = str(message.text).split(" ")[-1]
+        if up_tgid == '' or up_tgid == ' ':
+            await message.reply("ID不能为空，请重新输入")
+
+        if canrig(int(up_tgid)) == 'A':
+            await message.reply("该用户没有可以升级的账号")
+            chat_step[tgid] = ''
+        elif hadname(int(up_tgid)) == 'C':
+            await message.reply("该用户尚未绑定Emby账号")
+            chat_step[tgid] = ''
+        elif sqlworker.select('user', '*', {'tgid': up_tgid, 'grade': 1}):
+            await message.reply("该用户已拥有高级账户，无法升级")
+            chat_step[tgid] = ''
+        else:
+            user_info = sqlworker.select('user', '*', {'tgid': tgid, 'grade': 0})
+            emby_name = user_info[0][3]
+            await upgrade(embyname=emby_name)
+            await message.reply("emby账号{}已升级成功！".format(emby_name))
+            chat_step[tgid] = ''
 
 app.run()

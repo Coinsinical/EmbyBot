@@ -106,9 +106,12 @@ class Buttons(object):
         [KeyboardButton("用户注册"), KeyboardButton("用户删除"), KeyboardButton("用户升级"), KeyboardButton("兑换")],
         [KeyboardButton("线路查看"), KeyboardButton("个人信息")]]
 
+    user_code_buttons = [[InlineKeyboardButton("兑换邀请码", callback_data="/inpute_register_code")],
+                          [InlineKeyboardButton("兑换升级码", callback_data="/input_upgrade_code")]]
+
     # admin buttons
-    admin_start_buttons = [[KeyboardButton("创建邀请码")], [KeyboardButton("用户设置")], [KeyboardButton("注册设置")]]
-    admin_user_setting_buttons = [[InlineKeyboardButton("设置管理员", callback_data="/setadmin")],
+    admin_start_buttons = [[KeyboardButton("创建券码")], [KeyboardButton("用户设置")], [KeyboardButton("注册设置")]]
+    admin_user_setting_buttons = [[InlineKeyboardButton("管理员设置", callback_data="/admin_settings")],
                                   [InlineKeyboardButton("封禁用户", callback_data="/ban_emby")],
                                   [InlineKeyboardButton("解禁用户", callback_data="/unban_emby")],
                                   [InlineKeyboardButton("删除用户", callback_data="/delete")],
@@ -118,6 +121,10 @@ class Buttons(object):
                               [InlineKeyboardButton("开放邀请注册", callback_data="/register_code")],
                               [InlineKeyboardButton("关闭所有注册", callback_data="/close_register")]
                               ]
+    admin_code_buttons = [[InlineKeyboardButton("创建邀请码", callback_data="/create_register_code")],
+                                  [InlineKeyboardButton("创建升级码", callback_data="/create_upgrade_code")]]
+    admin_admin_setting_buttons = [[InlineKeyboardButton("设置管理员", callback_data="/setadmin")],
+                                   [InlineKeyboardButton("删除管理员", callback_data="/deleteadmin")]]
 
 
 if __name__ == '__main__':
